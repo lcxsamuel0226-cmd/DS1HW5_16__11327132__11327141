@@ -1,10 +1,5 @@
-//
-//  main.cpp
-//  DS1HW5_16__11327132__11327141
-//
-//  Created by 李晨希 on 2025/12/15.
-//
-
+//11327132李晨希 11327141羅元廷
+//ds第五次作業
 #include <iostream>
 
 int main(int argc, const char * argv[]) {

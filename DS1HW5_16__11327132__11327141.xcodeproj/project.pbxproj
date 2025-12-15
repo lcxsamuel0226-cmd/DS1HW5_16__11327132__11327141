@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7E982E3B2EF0676400BBD52A /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7E982E3A2EF0676400BBD52A /* main.cpp */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		7E982E352EF0676400BBD52A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -20,15 +24,8 @@
 
 /* Begin PBXFileReference section */
 		7E982E372EF0676400BBD52A /* DS1HW5_16__11327132__11327141 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DS1HW5_16__11327132__11327141; sourceTree = BUILT_PRODUCTS_DIR; };
+		7E982E3A2EF0676400BBD52A /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		7E982E392EF0676400BBD52A /* DS1HW5_16__11327132__11327141 */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = DS1HW5_16__11327132__11327141;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		7E982E342EF0676400BBD52A /* Frameworks */ = {
@@ -44,7 +41,7 @@
 		7E982E2E2EF0676400BBD52A = {
 			isa = PBXGroup;
 			children = (
-				7E982E392EF0676400BBD52A /* DS1HW5_16__11327132__11327141 */,
+				7E982E3A2EF0676400BBD52A /* main.cpp */,
 				7E982E382EF0676400BBD52A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,9 +68,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				7E982E392EF0676400BBD52A /* DS1HW5_16__11327132__11327141 */,
 			);
 			name = DS1HW5_16__11327132__11327141;
 			packageProductDependencies = (
@@ -120,6 +114,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7E982E3B2EF0676400BBD52A /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
