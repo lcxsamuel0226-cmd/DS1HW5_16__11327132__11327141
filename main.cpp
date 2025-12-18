@@ -12,6 +12,7 @@
 using namespace std;
 
 // **************** Utility Functions ************************
+
 void ShowMenu() {
   cout << "*** (^_^) Data Structure (^o^) ***" << endl;
   cout << "** Binary Search Tree on Pokemon *" << endl;
@@ -22,14 +23,12 @@ void ShowMenu() {
   cout << "* 4. Rebuild the balanced HP BST *" << endl;
   cout << "**********************************" << endl;
 }
-
 void HandleInvalidInput(const string &message) {
   cout << message << endl;
   cin.clear();
   cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
-
-string getFileNumber() {
+string GetFileNumber() {
   string input;
     
   while (true) {
@@ -43,43 +42,61 @@ string getFileNumber() {
     }
   }
 }
-int GetCommand() {
-  if (cin.peek() == '\n') {
-    cin.ignore();
-  }
-  
-  int cmd;
+int GetValidCommand() {
+  string line;
+
   while (true) {
-    if (cin >> cmd && cmd >= 0 && cmd <= 4) {
-      char next = cin.peek();
-      while (next == ' ' || next == '\t') {
-        cin.get();
-        next = cin.peek();
-      }
-      
-      if (cin.peek() == '\n' || cin.peek() == EOF) {
-        cin.ignore();
-        return cmd;
-      }
+    getline(cin, line);
+    size_t start = line.find_first_not_of(" \t\r\n");
+
+    // 如果只按 Enter 直接忽略重讀
+    if (start == string::npos) {
+      continue;
     }
-      
+
+    size_t end = line.find_last_not_of(" \t\r\n");
+    string input = line.substr(start, end - start + 1);
+
+    // 必須是單一數字 0~4
+    if (input.size() == 1 &&
+        input[0] >= '0' &&
+        input[0] <= '4') {
+      return input[0] - '0';
+    }
+
     HandleInvalidInput("Command does not exist!");
     ShowMenu();
   }
 }
-int GetNumWithRange(int min, int max) {
-  int num = 0;
-    
-  while (!(cin >> num) || num < min || num > max) {
-    if (cin.fail()) {
-      HandleInvalidInput("");
-    } else {
-      cout << "\n### The number must be in [" << min << "," << max << "] ###" << endl;
-    }
+void GetNonNegativeInts(int& smaller, int& larger) {
+  int a, b;
+
+  // 讀第一個數字
+  while (true) {
+    cout << "Input a non-negative integer: ";
+    cin >> a;
+    if (a >= 0) break;
+    cout << "### It is NOT a non-negative integer. ###" << endl;
   }
-    
-  return num;
+
+  // 讀第二個數字
+  while (true) {
+    cout << "Input a non-negative integer: ";
+    cin >> b;
+    if (b >= 0) break;
+    cout << "### It is NOT a non-negative integer. ###" << endl;
+  }
+
+  // 排序
+  if (a <= b) {
+    smaller = a;
+    larger = b;
+  } else {
+    smaller = b;
+    larger = a;
+  }
 }
+
 // ***********************************************************
 struct Pokemon {
   int number;          // 編號
@@ -97,7 +114,6 @@ struct Pokemon {
   string legendary;    // 傳說與否
 };
 
-// 只存HP和編號
 struct TreeNode {
   int hp;                    // 生命
   vector<int> ids;           // 相同HP的所有編號（依原始順序）
@@ -109,7 +125,6 @@ struct TreeNode {
   }
 };
 
-// 二元搜尋樹類別
 class BST {
  private:
   TreeNode* root;
@@ -208,29 +223,32 @@ class BST {
     
   // 範圍查詢（遞迴+剪枝）
   void rangeSearchHelper(TreeNode* node, int minHP, int maxHP,
-                          vector<pair<int, int>>& result, int& visitCount) {
-    if (!node) return;
+                          vector<int>& result, int& visitCount) {
+    if (node == nullptr) return;
         
       visitCount++;  // 記錄走訪節點數
         
       if (node->hp < minHP) {
         // 當前節點太小，只需往右找
+        
         rangeSearchHelper(node->right, minHP, maxHP, result, visitCount);
       } else if (node->hp > maxHP) {
         // 當前節點太大，只需往左找
+        
         rangeSearchHelper(node->left, minHP, maxHP, result, visitCount);
       } else {
         // 當前節點在範圍內
         // 先找左子樹（可能有更小但仍在範圍內的）
-        rangeSearchHelper(node->left, minHP, maxHP, result, visitCount);
+        // 用inorder遍歷，hp才能遞減排列
+        
+        rangeSearchHelper(node->right, minHP, maxHP, result, visitCount);
             
         // 加入當前節點所有ID
         for (int id : node->ids) {
-          result.push_back({node->hp, id});
+          result.push_back(id);
         }
             
-        // 再找右子樹
-      rangeSearchHelper(node->right, minHP, maxHP, result, visitCount);
+        rangeSearchHelper(node->left, minHP, maxHP, result, visitCount);
     }
   }
     
@@ -251,7 +269,7 @@ public:
     
     // 插入節點（迴圈實作）
     void insert(int hp, int id) {
-        if (!root) {
+        if (root == nullptr) {
             root = new TreeNode(hp, id);
             return;
         }
@@ -263,13 +281,13 @@ public:
                 current->ids.push_back(id);
                 return;
             } else if (hp < current->hp) {
-                if (!current->left) {
+                if (current->left == nullptr) {
                     current->left = new TreeNode(hp, id);
                     return;
                 }
                 current = current->left;
-            } else {  // hp > current->hp
-                if (!current->right) {
+            } else if (hp > current->hp) {
+                if (current->right == nullptr) {
                     current->right = new TreeNode(hp, id);
                     return;
                 }
@@ -288,12 +306,12 @@ public:
         return root == nullptr;
     }
     
-    // 範圍查詢
-    vector<pair<int, int>> rangeSearch(int minHP, int maxHP, int& visitCount) {
-        vector<pair<int, int>> result;
-        visitCount = 0;
-        rangeSearchHelper(root, minHP, maxHP, result, visitCount);
-        return result;
+    // 範圍查詢，會回傳依 hp 遞減排列的 id 陣列
+    vector<int> rangeSearch(int minHP, int maxHP, int& visitCount) {
+      vector<int> result;
+      visitCount = 0;
+      rangeSearchHelper(root, minHP, maxHP, result, visitCount);
+      return result;
     }
     
     // 刪除極值節點（交替刪除最小/最大）
@@ -331,16 +349,16 @@ public:
     }
 };
 
-bool readFile(int fileNum, vector<Pokemon>& pokemons) {
-    string filename = "input" + to_string(fileNum) + ".txt";
-    ifstream file(filename);
+bool readFile(string filename, vector<Pokemon>& pokemons) {
+        ifstream file(filename);
     
     if (!file.is_open()) {
-        cout << "### " << filename << " does not exist! ###" << endl;
         return false;
     }
-    
+  
+   // 把舊資料清掉
     pokemons.clear();
+  
     string line;
     
     // 讀取標題列（跳過）
@@ -348,20 +366,19 @@ bool readFile(int fileNum, vector<Pokemon>& pokemons) {
     
     // 讀取資料
     while (getline(file, line)) {
-        stringstream ss(line);
-        Pokemon p;
+      stringstream ss(line);
+      Pokemon p;
         
-        ss >> p.number >> p.name >> p.type1 >> p.type2
-           >> p.total >> p.hp >> p.attack >> p.defense
-           >> p.spAtk >> p.spDef >> p.speed >> p.generation >> p.legendary;
+      ss >> p.number >> p.name >> p.type1 >> p.type2
+         >> p.total >> p.hp >> p.attack >> p.defense
+         >> p.spAtk >> p.spDef >> p.speed >> p.generation >> p.legendary;
         
-        pokemons.push_back(p);
+      pokemons.push_back(p);
     }
     
     file.close();
     return true;
 }
-
 
 // 根據ID找到寶可夢
 const Pokemon* findPokemonById(const vector<Pokemon>& pokemons, int id) {
@@ -371,90 +388,85 @@ const Pokemon* findPokemonById(const vector<Pokemon>& pokemons, int id) {
 }
 
 // 任務一：讀檔並建樹
-void task1(vector<Pokemon>& pokemons, BST& hpTree, bool& dataLoaded) {
+void task1(vector<Pokemon>& pokemons, BST& hpTree) {
+  
   cout << "Input a file number [0: quit]: ";
-  string fileNum = getFileNumber();
+  
+  string fileNum = GetFileNumber();
+  if (fileNum == "0") return;
+  
   cout << "\n";
     
-  if (fileNum == "0") return;
-    if (!readFile(fileNum, pokemons)) return;
+  string filename = "input" + fileNum + ".txt";
+  if (!readFile(filename, pokemons)) {
+    cout << "### " << filename << " does not exist! ###" << endl;
+    return;
+  }
     
-    // 顯示前4個欄位
-    cout << "\t#\tName\t\t\tType 1\t\tHP" << endl;
-    for (size_t i = 0; i < pokemons.size(); i++) {
-        cout << "[ " << setw(2) << (i + 1) << "]\t"
-             << pokemons[i].number << "\t"
-             << left << setw(24) << pokemons[i].name
-             << setw(16) << pokemons[i].type1
-             << pokemons[i].hp << "    " << endl;
-    }
+  // 顯示前4個欄位
+  cout << "\t#\tName\t\t\tType 1\t\tHP" << endl;
+  for (int i = 0; i < pokemons.size(); i++) {
+    cout << "[ " << setw(2) << (i + 1) << "]\t"
+    << pokemons[i].number << "\t"
+    << left << setw(24) << pokemons[i].name
+    << setw(16) << pokemons[i].type1
+    << pokemons[i].hp << "    " << endl;
+  }
     
-    // 建立HP二元搜尋樹
-    hpTree = BST();  // 重建新樹
-    for (const auto& p : pokemons) {
-        hpTree.insert(p.hp, p.number);
-    }
+  // 建立HP二元搜尋樹
+  hpTree = BST();  // 重建新樹
+  for (int i = 0; i < pokemons.size(); i++) {
+      hpTree.insert(pokemons[i].hp, pokemons[i].number);
+  }
     
-    cout << "HP tree height = " << hpTree.height() << endl;
-    dataLoaded = true;
+  cout << "HP tree height = " << hpTree.height() << endl;
 }
 
 // 任務二：範圍查詢
-void task2(const vector<Pokemon>& pokemons, BST& hpTree, bool dataLoaded) {
-    if (!dataLoaded) {
-        cout << "Please load data first (Task 1)!" << endl;
-        return;
-    }
+void task2(vector<Pokemon>& pokemons, BST& hpTree) {
+  // 讀入兩個整數後比較大小
+  int minhp, maxhp;
+  GetNonNegativeInts(minhp, maxhp);
+  
+  int visitCount = 0;
+  vector<int> result = hpTree.rangeSearch(minhp, maxhp, visitCount);
     
-    int minHP, maxHP;
-    cout << "Input a non-negative integer: ";
-    cin >> minHP;
-    cout << "Input a non-negative integer: ";
-    cin >> maxHP;
-    
-    int visitCount = 0;
-    auto result = hpTree.rangeSearch(minHP, maxHP, visitCount);
-    
-    if (result.empty()) {
-        cout << "No record was found in the specified range." << endl;
-    } else {
-        // 按HP遞減排序（相同HP保持原始順序）
-        stable_sort(result.begin(), result.end(),
-                   [](const pair<int,int>& a, const pair<int,int>& b) {
-                       return a.first > b.first;
-                   });
+  if (result.empty()) {
+    cout << "No record was found in the specified range." << endl;
+  }
         
-        // 顯示結果
-        cout << "\t#\tName\t\t\tType 1\t\tTotal\tHP\tAttack\tDefense" << endl;
-        for (size_t i = 0; i < result.size(); i++) {
-            const Pokemon* p = findPokemonById(pokemons, result[i].second);
-            if (p) {
-                cout << "[ " << setw(2) << (i + 1) << "]\t"
-                     << p->number << "\t"
-                     << left << setw(24) << p->name
-                     << setw(16) << p->type1
-                     << p->total << "\t"
-                     << p->hp << "\t"
-                     << p->attack << "\t"
-                     << p->defense << endl;
-            }
-        }
-    }
+  // 顯示結果
+  cout << "\t#\tName\t\t\tType 1\t\tTotal\tHP\tAttack\tDefense" << endl;
+  
+  for (size_t i = 0; i < result.size(); i++) {
+    const Pokemon* p = findPokemonById(pokemons, result[i]);
+    if (p != nullptr) {
+      cout << "[ " << setw(2) << (i + 1) << "]\t"
+           << p->number << "\t"
+           << left << setw(24) << p->name
+           << setw(16) << p->type1
+           << p->total << "\t"
+           << p->hp << "\t"
+           << p->attack << "\t"
+           << p->defense << endl;
+          }
+      }
+    
     
     cout << "Number of visited nodes = " << visitCount << endl;
 }
 
 // 任務三：刪除極值節點
-void task3(const vector<Pokemon>& pokemons, BST& hpTree, bool dataLoaded) {
-    if (!dataLoaded) {
-        cout << "Please load data first (Task 1)!" << endl;
-        return;
-    }
+void task3(vector<Pokemon>& pokemons, BST& hpTree) {
+  if (pokemons.empty()) {
+    cout << "Please load data first (Task 1)!" << endl;
+    return;
+  }
     
-    if (hpTree.isEmpty()) {
-        cout << "Tree is empty. Please rebuild tree (Task 1)!" << endl;
-        return;
-    }
+  if (hpTree.isEmpty()) {
+    cout << "Tree is empty. Please rebuild tree (Task 1)!" << endl;
+    return;
+  }
     
     auto deletedIds = hpTree.deleteExtreme();
     
@@ -480,9 +492,9 @@ void task3(const vector<Pokemon>& pokemons, BST& hpTree, bool dataLoaded) {
 }
 
 // 任務四：重建平衡樹
-void task4(BST& hpTree, bool dataLoaded) {
-    if (!dataLoaded) {
-        cout << "Please load data first (Task 1)!" << endl;
+void task4(vector<Pokemon>& pokemons, BST& hpTree) {
+    if (pokemons.empty()) {
+        cout << "----- Execute Mission 1 first! -----" << endl;
         return;
     }
     
@@ -491,35 +503,36 @@ void task4(BST& hpTree, bool dataLoaded) {
 }
 
 int main() {
-    vector<Pokemon> pokemons;
-    BST hpTree;
-    bool dataLoaded = false;
-    int choice;
+  vector<Pokemon> pokemons;
+  BST hpTree;
+  int command;
     
-    while (true) {
-      ShowMenu();
-        cout << "Input a choice(0, 1, 2, 3, 4): ";
-        cin >> choice;
-        
-        switch (choice) {
-            case 0:
-                return 0;
-            case 1:
-                task1(pokemons, hpTree, dataLoaded);
-                break;
-            case 2:
-                task2(pokemons, hpTree, dataLoaded);
-                break;
-            case 3:
-                task3(pokemons, hpTree, dataLoaded);
-                break;
-            case 4:
-                task4(hpTree, dataLoaded);
-                break;
-            default:
-                cout << "Invalid choice!" << endl;
-        }
+  while (true) {
+    ShowMenu();
+    int command = GetValidCommand();
+
+    if (command == 0) return 0;
+
+    if (command == 1) {
+      task1(pokemons, hpTree);
+      continue;
     }
+
+    if (command >= 2 && command <= 4 && pokemons.empty()) {
+      cout << "Please load data first (Task 1)!" << endl;
+      continue;
+    }
+
+    if (command == 2) {
+      task2(pokemons, hpTree);
+    } else if (command == 3) {
+      task3(pokemons, hpTree);
+    } else if (command == 4) {
+      task4(pokemons, hpTree);
+    } else {
+      cout << "Invalid choice!" << endl;
+    }
+  }
     
     return 0;
 }
