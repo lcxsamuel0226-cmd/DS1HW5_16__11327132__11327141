@@ -99,7 +99,7 @@ void GetNonNegativeInts(int& smaller, int& larger) {
 
 // ***********************************************************
 struct Pokemon {
-  int number;          // 編號
+  int id;          // 編號
   string name;         // 名稱
   string type1;        // 類型1
   string type2;        // 類型2
@@ -138,8 +138,7 @@ class BST {
     
   // 刪除最小節點（遞迴）
   TreeNode* deleteMin(TreeNode* node, vector<int>& deletedIds) {
-    if (!node->left) {
-      // 找到最小節點
+    if (node->left == nullptr) {
       deletedIds = node->ids;  // 保存被刪除的ID
       TreeNode* rightChild = node->right;
       delete node;
@@ -152,7 +151,6 @@ class BST {
     // 刪除最大節點（遞迴）
   TreeNode* deleteMax(TreeNode* node, vector<int>& deletedIds) {
     if (!node->right) {
-    // 找到最大節點
       deletedIds = node->ids;  // 保存被刪除的ID
       TreeNode* leftChild = node->left;
       delete node;
@@ -314,20 +312,21 @@ public:
       return result;
     }
     
-    // 刪除極值節點（交替刪除最小/最大）
+    // 刪除極值節點（交替刪除最小、最大）
     vector<int> deleteExtreme() {
-        vector<int> deletedIds;
+      vector<int> deletedIds;
+      
+      // 雖然在 task3 已檢查過是否為空，但還是保留判斷來確保程式健全性
+      if (root == nullptr) return deletedIds;
         
-        if (!root) return deletedIds;
+      if (deleteMinNext) {
+        root = deleteMin(root, deletedIds);
+      } else {
+        root = deleteMax(root, deletedIds);
+      }
         
-        if (deleteMinNext) {
-            root = deleteMin(root, deletedIds);
-        } else {
-            root = deleteMax(root, deletedIds);
-        }
-        
-        deleteMinNext = !deleteMinNext;  // 下次刪另一端
-        return deletedIds;
+      deleteMinNext = !deleteMinNext;  // 下次刪另一端
+      return deletedIds;
     }
     
     // 重建平衡樹
@@ -369,7 +368,7 @@ bool readFile(string filename, vector<Pokemon>& pokemons) {
       stringstream ss(line);
       Pokemon p;
         
-      ss >> p.number >> p.name >> p.type1 >> p.type2
+      ss >> p.id >> p.name >> p.type1 >> p.type2
          >> p.total >> p.hp >> p.attack >> p.defense
          >> p.spAtk >> p.spDef >> p.speed >> p.generation >> p.legendary;
         
@@ -383,7 +382,7 @@ bool readFile(string filename, vector<Pokemon>& pokemons) {
 // 根據ID找到寶可夢
 const Pokemon* findPokemonById(const vector<Pokemon>& pokemons, int id) {
     auto it = find_if(pokemons.begin(), pokemons.end(),
-                     [id](const Pokemon& p) { return p.number == id; });
+                     [id](const Pokemon& p) { return p.id == id; });
     return (it != pokemons.end()) ? &(*it) : nullptr;
 }
 
@@ -403,20 +402,20 @@ void task1(vector<Pokemon>& pokemons, BST& hpTree) {
     return;
   }
     
-  // 顯示前4個欄位
-  cout << "\t#\tName\t\t\tType 1\t\tHP" << endl;
+  // 顯示結果
+  cout << "\t#\t" << setw(19) <<left << "Name\t" << setw(10) <<"Type 1\tHP" << endl;
+  
   for (int i = 0; i < pokemons.size(); i++) {
-    cout << "[ " << setw(2) << (i + 1) << "]\t"
-    << pokemons[i].number << "\t"
-    << left << setw(24) << pokemons[i].name
-    << setw(16) << pokemons[i].type1
-    << pokemons[i].hp << "    " << endl;
+    cout << "[" << setw(3) << right << (i + 1) << "]\t" << pokemons[i].id
+         << "\t" << setw(20) << left << pokemons[i].name
+         << "\t" << setw(10) << pokemons[i].type1
+         << "\t" << pokemons[i].hp << endl;
   }
     
   // 建立HP二元搜尋樹
   hpTree = BST();  // 重建新樹
   for (int i = 0; i < pokemons.size(); i++) {
-      hpTree.insert(pokemons[i].hp, pokemons[i].number);
+      hpTree.insert(pokemons[i].hp, pokemons[i].id);
   }
     
   cout << "HP tree height = " << hpTree.height() << endl;
@@ -424,6 +423,11 @@ void task1(vector<Pokemon>& pokemons, BST& hpTree) {
 
 // 任務二：範圍查詢
 void task2(vector<Pokemon>& pokemons, BST& hpTree) {
+  if (pokemons.empty() || hpTree.isEmpty()) {
+      cout << "----- Execute Mission 1 first! -----" << endl;
+      return;
+    }
+  
   // 讀入兩個整數後比較大小
   int minhp, maxhp;
   GetNonNegativeInts(minhp, maxhp);
@@ -436,19 +440,18 @@ void task2(vector<Pokemon>& pokemons, BST& hpTree) {
   }
         
   // 顯示結果
-  cout << "\t#\tName\t\t\tType 1\t\tTotal\tHP\tAttack\tDefense" << endl;
+  cout << "\t#\t" << setw(19) <<left << "Name\t" << setw(10) <<"Type 1\tTotal\tHP\tAttack\tDefense" << endl;
   
-  for (size_t i = 0; i < result.size(); i++) {
+  for (int i = 0; i < result.size(); i++) {
     const Pokemon* p = findPokemonById(pokemons, result[i]);
     if (p != nullptr) {
-      cout << "[ " << setw(2) << (i + 1) << "]\t"
-           << p->number << "\t"
-           << left << setw(24) << p->name
-           << setw(16) << p->type1
-           << p->total << "\t"
-           << p->hp << "\t"
-           << p->attack << "\t"
-           << p->defense << endl;
+      cout << "[" << setw(3) << right << (i + 1) << "]\t" << p->id
+           << "\t" << setw(20) << left << p->name
+           << "\t" << setw(10) << p->type1
+           << "\t" << setw(6) << left << p->total
+           << "\t" << p->hp
+           << "\t" << p->attack 
+           << "\t" << p->defense << endl;
           }
       }
     
@@ -458,33 +461,27 @@ void task2(vector<Pokemon>& pokemons, BST& hpTree) {
 
 // 任務三：刪除極值節點
 void task3(vector<Pokemon>& pokemons, BST& hpTree) {
-  if (pokemons.empty()) {
-    cout << "Please load data first (Task 1)!" << endl;
+  if (pokemons.empty() || hpTree.isEmpty()) {
+    cout << "----- Execute Mission 1 first! -----" << endl;
     return;
   }
-    
-  if (hpTree.isEmpty()) {
-    cout << "Tree is empty. Please rebuild tree (Task 1)!" << endl;
-    return;
-  }
-    
-    auto deletedIds = hpTree.deleteExtreme();
+  
+  vector<int> deletedIds = hpTree.deleteExtreme();
     
     // 顯示被刪除的資料
-    cout << "\t#\tName\t\t\tType 1\t\tTotal\tHP\tAttack\tDefense\tSp. Atk\tSp. Def" << endl;
+  cout << "\t#\t" << setw(19) <<left << "Name\t" << setw(10) << "Type 1\tTotal\tHP\tAttack\tDefense\tSp. Atk\tSp. Def" << endl;
     for (size_t i = 0; i < deletedIds.size(); i++) {
         const Pokemon* p = findPokemonById(pokemons, deletedIds[i]);
         if (p) {
-            cout << "[ " << setw(2) << (i + 1) << "]\t"
-                 << p->number << "\t"
-                 << left << setw(24) << p->name
-                 << setw(16) << p->type1
-                 << p->total << "\t"
-                 << p->hp << "\t"
-                 << p->attack << "\t"
-                 << p->defense << "\t"
-                 << p->spAtk << "\t"
-                 << p->spDef << endl;
+          cout << "[" << setw(3) << right << (i + 1) << "]\t" << p->id
+               << "\t" << setw(20) << left << p->name
+               << "\t" << setw(10) << p->type1
+               << "\t" << setw(6) << left << p->total
+               << "\t" << p->hp
+               << "\t" << p->attack
+               << "\t" << p->defense
+               << p->spAtk << "\t"
+               << p->spDef << endl;
         }
     }
     
@@ -493,6 +490,7 @@ void task3(vector<Pokemon>& pokemons, BST& hpTree) {
 
 // 任務四：重建平衡樹
 void task4(vector<Pokemon>& pokemons, BST& hpTree) {
+  
     if (pokemons.empty()) {
         cout << "----- Execute Mission 1 first! -----" << endl;
         return;
@@ -509,28 +507,20 @@ int main() {
     
   while (true) {
     ShowMenu();
-    int command = GetValidCommand();
+    command = GetValidCommand();
 
     if (command == 0) return 0;
 
     if (command == 1) {
       task1(pokemons, hpTree);
-      continue;
-    }
-
-    if (command >= 2 && command <= 4 && pokemons.empty()) {
-      cout << "Please load data first (Task 1)!" << endl;
-      continue;
-    }
-
-    if (command == 2) {
+    } else if (command == 2) {
       task2(pokemons, hpTree);
     } else if (command == 3) {
       task3(pokemons, hpTree);
     } else if (command == 4) {
       task4(pokemons, hpTree);
     } else {
-      cout << "Invalid choice!" << endl;
+      continue;
     }
   }
     
